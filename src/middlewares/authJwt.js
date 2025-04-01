@@ -1,11 +1,19 @@
 const jwt = require("jsonwebtoken");
-const config = require("../config/auth.config.js");
 const db = require("../models");
 const User = db.user;
 const Role = db.role;
 
+require('dotenv').config();
+
 verifyToken = (req, res, next) => {
   let token = req.session.token;
+
+  const { user_id } = req.params;
+  if (user_id) {
+    const decodedToken = jwt.decode(token);
+    if (!decodedToken || user_id != decodedToken.user_id)
+      return res.status(400).json({message: 'Invalid user'})
+  }
 
   if (!token) {
     return res.status(403).send({ message: "No token provided!" });
@@ -13,25 +21,24 @@ verifyToken = (req, res, next) => {
 
   jwt.verify(
     token,
-    config.secret,
+    process.env.SECRET_KEY,
     (err, decoded) => {
       if (err) {
         return res.status(401).send({
           message: "Unauthorized!",
         });
       }
-      req.userId = decoded.id;
 
-      const token = jwt.sign(
-        { id: decoded.id},
-          config.secret,
+      const newToken = jwt.sign(
+        { user_id: decoded.user_id },
+          process.env.SECRET_KEY,
           {
             algorithm: 'HS256',
             allowInsecureKeySizes: true,
-            expiresIn: config.tokenExpired,
+            expiresIn: 3600,
           });
       
-      req.session.token = token;
+      req.session.token = newToken;
 
       next();
     });

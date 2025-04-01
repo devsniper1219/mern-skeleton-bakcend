@@ -5,11 +5,23 @@ exports.allAccess = (req, res) => {
 };
 
 exports.userProfile = (req, res) => {
-  User.findById(req.userId).exec((err, user) => {
-    if (err)
-      return res.status(500).send({ message: err });
-    return res.status(200).send(user.email)
-  })
+  const { user_id } = req.params;
+
+  User
+    .findOne({user_id})
+    .then((user) => {
+      if (!user)
+        return res.status(400).json({message: 'Invalid User'})
+      const userData = {
+        username: user.username,
+        user_id: user.user_id,
+        publicKey: user.public_key,
+        email: user.email,
+        diamond_count: user.diamond_count
+      };
+
+    return res.status(200).json(userData);
+    })
 };
 
 exports.userBoard = (req, res) => {
